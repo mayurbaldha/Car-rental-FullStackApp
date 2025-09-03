@@ -1,52 +1,59 @@
 
-import axios from "axios";
 import React, { useEffect } from "react";
+import { api } from '../api/client';
+import { Toast } from './Toast';
 
-interface Car{
+interface Car {
     id: number;
     type: string;
     licensePlate: string;
-    isAvailable: boolean;
+    available: boolean;
 }
-interface CarSearchProps {
-    // Define your props here
-}
-export const CarSearch: React.FC<CarSearchProps> = () => {
+export const CarSearch: React.FC = () => {
     const [cars, setCars] = React.useState<Car[]>([]);
-    const [selectedType, setSelectedType] = React.useState<string>("SEDAN");
+    const [selectedType, setSelectedType] = React.useState<string>('SEDAN');
     const [startDateTime, setStartDateTime] = React.useState<string>('');
     const [days, setDays] = React.useState<number>(1);
+    const [loading, setLoading] = React.useState<boolean>(false);
+    const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     useEffect(() => {
-        // Fetch cars based on selected filters
         const fetchCars = async () => {
-            const response = await axios.get(`http://localhost:8080/api/cars/available`,{
-                params: {
-                    type: selectedType,
-                    start: startDateTime,
-                    days: days
-                }
-            });
-            setCars(response.data);
+            if (!startDateTime) {
+                setCars([]);
+                return;
+            }
+            try {
+                setLoading(true);
+                const response = await api.get(`/cars/available`, {
+                    params: { type: selectedType, start: startDateTime, days }
+                });
+                setCars(response.data);
+            } catch {
+                setToast({ message: 'Failed to load cars.', type: 'error' });
+            } finally {
+                setLoading(false);
+            }
         };
-
         fetchCars();
     }, [selectedType, startDateTime, days]);
 
     const handleReservation = async (carId: number) => {
-    try {
-        await axios.post(`http://localhost:8080/api/reservations`, {
-            carId,
-            userId: 1, // Replace with actual user ID
-            start: startDateTime,
-            days: days
-        });
-        alert("Reservation successful!");
-    } catch (error) {
-        alert("Reservation failed!");
-        console.error(error);
-    }
-        // Handle reservation response
+        try {
+            setLoading(true);
+            await api.post(`/reservations`, null, {
+                params: { carId, carType: selectedType, userId: 1, startDateTime: new Date(startDateTime).getMilliseconds(), days }
+            });
+            setToast({ message: 'Reservation successful!', type: 'success' });
+            // Refresh list after booking
+            const response = await api.get(`/cars/available`, { params: { type: selectedType, start: startDateTime, days } });
+            setCars(response.data);
+        } catch (err) {
+            console.error(err);
+            setToast({ message: 'Reservation failed!', type: 'error' });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return <div>
@@ -67,17 +74,22 @@ export const CarSearch: React.FC<CarSearchProps> = () => {
         <br />
         <label>
             Number of Days:
-            <input type="number" value={days} onChange={(e) => setDays(Number(e.target.value))} />
+            <input type="number" min={1} value={days} onChange={(e) => setDays(Number(e.target.value))} />
         </label>
+        <br />
+        {loading && <div>Loading…</div>}
         <ul>
             {cars.map(car => (
                 <li key={car.id}>
-                    {car.licensePlate} - {car.type} - {car.isAvailable ? "Available" : "Not Available"}
-                    {car.isAvailable && (
-                        <button onClick={() => handleReservation(car.id)}>Reserve</button>
+                    {car.licensePlate} - {car.type} - {car.available ? "Available" : "Not Available"}
+                    {car.available && (
+                        <button disabled={loading} onClick={() => handleReservation(car.id)}>Reserve</button>
                     )}
                 </li>
             ))}
         </ul>
+        {toast && (
+            <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        )}
     </div>;
 };
