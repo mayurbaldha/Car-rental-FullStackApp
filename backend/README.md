@@ -19,6 +19,7 @@ This application simulates a car rental system using object-oriented principles 
 
 - **Controllers**
   - `ReservationController`: REST API for reservation operations.
+  -  `CarController`: REST API for car operations.
 
 ---
 
