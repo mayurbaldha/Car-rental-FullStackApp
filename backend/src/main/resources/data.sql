@@ -1,0 +1,25 @@
+CREATE TABLE Cars (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    type VARCHAR(50) NOT NULL,
+    license_Plate VARCHAR(20) NOT NULL,
+    is_Available BOOLEAN NOT NULL
+);
+CREATE TABLE Reservations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    carId INT NOT NULL,
+    userId INT,
+    startDateTime DATETIME NOT NULL,
+    endDatetime DATETIME NOT NULL,
+    FOREIGN KEY (carId) REFERENCES Cars(id)
+);
+CREATE TABLE Users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE
+);
+
+INSERT INTO cars(id,type,license_Plate,is_Available) VALUES (1,'SEDAN','ABC-123',TRUE),
+(2,'SUV','XYZ-789',TRUE),
+(3,'SEDAN','TRK-456',TRUE),
+(4,'VAN','CON-321',TRUE),
+(5,'SUV','HAT-654',TRUE);
